@@ -1,4 +1,4 @@
-# go-mysql-syncer
+# mysql-syncer
 
 监听binlog，将源mysql数据库的表实时同步到目标mysql库中
 
