@@ -2,7 +2,8 @@
 
 监听binlog，将源mysql数据库的表实时同步到目标mysql库中
 
-详细配置见etc/river.toml
+合理配置bulk_size、thread 详细配置见etc/river.toml
+
 ```
 # MySQL master address, user and password
 source_addr = "127.0.0.1:3306"
