@@ -16,13 +16,13 @@ sink_user = "root"
 sink_pass = "ef08ef776ce21a44"
 sink_charset = "utf8"
 
-# 客户端连接池
+# The client connection pool
 thread      = 10
 
-# 最大连接数
+# Max Connections
 max_connect = 20
 
-# 最大打开数
+# Maximum number of open
 max_open    = 30
 
 # Path to store data, like master.info, if not set or empty,
