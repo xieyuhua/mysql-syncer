@@ -11,10 +11,13 @@ import (
 	"github.com/siddontang/go-log/log"
 	"github.com/zhaochuanyun/go-mysql-syncer/mysql"
 	"github.com/zhaochuanyun/go-mysql/canal"
+	"database/sql"
 )
 
 // ErrRuleNotExist is the error if rule is not defined.
 var ErrRuleNotExist = errors.New("rule is not exist")
+
+var Db *sql.DB
 
 // River is a pluggable service within Elasticsearch pulling data then indexing it into Elasticsearch.
 // We use this definition here too, although it may not run within Elasticsearch.
@@ -49,7 +52,24 @@ func NewRiver(c *Config) (*River, error) {
 	r.syncCh = make(chan interface{}, 4096)
 	r.ctx, r.cancel = context.WithCancel(context.Background())
 
-	var err error
+
+	cfg := new(mysql.ClientConfig)
+	cfg.Addr = r.c.SinkAddr
+	cfg.User = r.c.SinkUser
+	cfg.Password = r.c.SinkPassword
+	cfg.Thread = r.c.Thread
+	cfg.MaxConnect = r.c.MaxConnect
+	cfg.MaxOpen = r.c.MaxOpen
+	r.mysql = mysql.NewClient(cfg)
+	
+    //mysql  表结构
+	connString := cfg.User + ":" + cfg.Password + "@tcp(" + cfg.Addr + ")/"
+    var err error
+	Db, err  = sql.Open("mysql", connString)
+	if err != nil {
+		return nil,errors.Trace(err)
+	}
+	
 	if r.master, err = loadMasterInfo(c.DataDir); err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -71,14 +91,6 @@ func NewRiver(c *Config) (*River, error) {
 		return nil, errors.Trace(err)
 	}
 
-	cfg := new(mysql.ClientConfig)
-	cfg.Addr = r.c.SinkAddr
-	cfg.User = r.c.SinkUser
-	cfg.Password = r.c.SinkPassword
-	cfg.Thread = r.c.Thread
-	cfg.MaxConnect = r.c.MaxConnect
-	cfg.MaxOpen = r.c.MaxOpen
-	r.mysql = mysql.NewClient(cfg)
 
 	r.st = &stat{r: r}
 	go r.st.Run(r.c.StatAddr)
@@ -137,13 +149,15 @@ func (r *River) prepareCanal() error {
 	return nil
 }
 
+
+    
 func (r *River) newRule(schema, table string) error {
 	key := ruleKey(schema, table)
 
 	if _, ok := r.rules[key]; ok {
 		return errors.Errorf("duplicate source %s, %s defined in config", schema, table)
 	}
-
+	
 	r.rules[key] = newDefaultRule(schema, table)
 	return nil
 }
@@ -227,6 +241,7 @@ func (r *River) prepareRule() error {
 	}
 
 	if r.c.Rules != nil {
+	    
 		// then, set custom mapping rule
 		for _, rule := range r.c.Rules {
 			if len(rule.SourceSchema) == 0 {
@@ -272,6 +287,27 @@ func (r *River) prepareRule() error {
 			log.Errorf("ignored table without a primary key: %s\n", rule.TableInfo.Name)
 		} else {
 			rules[key] = rule
+		}
+		
+		//取存在的全部字段  filter 不为空
+		if len(rules[key].Filter) == 0 {
+        	sql := fmt.Sprintf(`SELECT COLUMN_NAME columnName FROM information_schema.COLUMNS WHERE table_name RLIKE "%s" AND table_schema = "%s";`, buildTable(rule.SinkTable), rule.SinkSchema)
+        	rows, err := Db.Query(sql)
+        	defer rows.Close()
+        	if err != nil {
+        		return errors.Trace(err)
+        	}
+            rulefilter := []string{}
+            for rows.Next() {
+                var f string
+                err = rows.Scan(&f)
+            	if err != nil {
+            		return errors.Trace(err)
+            	}
+            	rulefilter = append(rulefilter, f)
+            }
+            rule.Filter = rulefilter
+            rules[key] = rule
 		}
 	}
 	r.rules = rules

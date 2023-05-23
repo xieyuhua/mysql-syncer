@@ -74,6 +74,9 @@ func (h *eventHandler) OnRow(e *canal.RowsEvent) error {
 	if !ok {
 		return nil
 	}
+	
+    // fmt.Println(rule)
+
 
 	var reqs []*mysqlsink.BulkRequest
 	var err error

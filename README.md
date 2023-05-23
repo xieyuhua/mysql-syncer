@@ -67,7 +67,9 @@ source_schema = "niushop"
 source_table = "notice"
 sink_schema = "mysqlss"
 sink_table = "notice"
-filter = ["id", "site_id","title", "is_top","create_time", "modify_time","receiving_type"]
+
+# Field synchronous set, the default synchronization is the target table fields
+filter = ["id", "site_id","title"]
 
 [[rule]]
 source_schema = "niushop"

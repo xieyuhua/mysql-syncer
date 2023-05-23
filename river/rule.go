@@ -1,6 +1,7 @@
 package river
 
 import (
+    // "fmt"
 	"github.com/zhaochuanyun/go-mysql/schema"
 )
 
@@ -20,7 +21,7 @@ type Rule struct {
 	//only MySQL fields in filter will be synced , default sync all fields
 	Filter []string `toml:"filter"`
 }
-
+//[]string{}
 func newDefaultRule(schema string, table string) *Rule {
 	r := new(Rule)
 
@@ -28,7 +29,7 @@ func newDefaultRule(schema string, table string) *Rule {
 	r.SinkTable = table
 
 	r.FieldMapping = make(map[string]string)
-
+	
 	return r
 }
 
@@ -45,7 +46,6 @@ func (r *Rule) CheckFilter(field string) bool {
 	if r.Filter == nil {
 		return true
 	}
-
 	for _, f := range r.Filter {
 		if f == field {
 			return true

@@ -12,7 +12,7 @@ sink_user = "root"
 sink_pass = "ef08ef776ce21a44"
 sink_charset = "utf8"
 
-thread      = 200
+thread      = 10
 max_connect = 20
 max_open    = 30
 
@@ -57,8 +57,9 @@ source_schema = "niushop"
 source_table = "notice"
 sink_schema = "mysqlss"
 sink_table = "notice"
-filter = ["id", "site_id","title", "is_top","create_time", "modify_time","receiving_type"]
 
+# Field synchronous set, the default synchronization is the target table fields
+filter = ["id", "site_id","title", "is_top"]
 
 
 [[rule]]
